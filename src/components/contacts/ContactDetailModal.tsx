@@ -578,38 +578,27 @@ export const ContactDetailModal = ({
             </TabsContent>
 
             <TabsContent value="emails" className="mt-4">
-              <div className="space-y-6">
-                {/* Email Engagement Stats */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-base">Email Engagement</CardTitle>
-                      {contact.email && (
-                        <Button size="sm" onClick={() => setShowEmailModal(true)}>
-                          <Send className="h-4 w-4 mr-1" />
-                          Send Email
-                        </Button>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <ContactEmailTracking
-                      emailOpens={contact.email_opens || 0}
-                      emailClicks={contact.email_clicks || 0}
-                      engagementScore={contact.engagement_score || 0}
-                    />
-                  </CardContent>
-                </Card>
+              <div className="space-y-4">
+                {/* Compact Email Engagement Stats with Send Button */}
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <ContactEmailTracking
+                    emailOpens={contact.email_opens || 0}
+                    emailClicks={contact.email_clicks || 0}
+                    engagementScore={contact.engagement_score || 0}
+                  />
+                  {contact.email && (
+                    <Button size="sm" onClick={() => setShowEmailModal(true)}>
+                      <Send className="h-4 w-4 mr-1" />
+                      Send Email
+                    </Button>
+                  )}
+                </div>
 
                 {/* Email History */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Email History</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <EntityEmailHistory entityType="contact" entityId={contact.id} />
-                  </CardContent>
-                </Card>
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Email History</h4>
+                  <EntityEmailHistory entityType="contact" entityId={contact.id} />
+                </div>
               </div>
             </TabsContent>
 

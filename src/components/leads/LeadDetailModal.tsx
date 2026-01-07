@@ -643,8 +643,14 @@ export const LeadDetailModal = ({
 
             <TabsContent value="emails" className="mt-4">
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-medium">Email History</h3>
+                {/* Compact Email Stats with Send Button */}
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-6 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-blue-500" />
+                      <span className="text-muted-foreground">Emails sent</span>
+                    </div>
+                  </div>
                   {lead.email && (
                     <Button size="sm" onClick={() => setShowEmailModal(true)}>
                       <Send className="h-4 w-4 mr-1" />
@@ -652,7 +658,12 @@ export const LeadDetailModal = ({
                     </Button>
                   )}
                 </div>
-                <EntityEmailHistory entityType="lead" entityId={lead.id} />
+
+                {/* Email History */}
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Email History</h4>
+                  <EntityEmailHistory entityType="lead" entityId={lead.id} />
+                </div>
               </div>
             </TabsContent>
 
