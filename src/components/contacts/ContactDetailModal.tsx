@@ -272,17 +272,17 @@ export const ContactDetailModal = ({
                     Update
                   </Button>
                 )}
-                {contact.email && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowEmailModal(true)}
-                    className="gap-2"
-                  >
-                    <Send className="h-4 w-4" />
-                    Send Email
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowEmailModal(true)}
+                  className="gap-2"
+                  disabled={!contact.email}
+                  title={!contact.email ? "No email address available" : "Send email to contact"}
+                >
+                  <Send className="h-4 w-4" />
+                  Send Email
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -596,12 +596,15 @@ export const ContactDetailModal = ({
                     emailOpens={contact.email_opens || 0}
                     emailClicks={contact.email_clicks || 0}
                   />
-                  {contact.email && (
-                    <Button size="sm" onClick={() => setShowEmailModal(true)}>
-                      <Send className="h-4 w-4 mr-1" />
-                      Send Email
-                    </Button>
-                  )}
+                  <Button 
+                    size="sm" 
+                    onClick={() => setShowEmailModal(true)}
+                    disabled={!contact.email}
+                    title={!contact.email ? "No email address available" : "Send email to contact"}
+                  >
+                    <Send className="h-4 w-4 mr-1" />
+                    Send Email
+                  </Button>
                 </div>
 
                 {/* Email History */}

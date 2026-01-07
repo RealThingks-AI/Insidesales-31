@@ -315,17 +315,17 @@ export const LeadDetailModal = ({
                     Edit
                   </Button>
                 )}
-                {lead.email && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowEmailModal(true)}
-                    className="gap-2"
-                  >
-                    <Send className="h-4 w-4" />
-                    Send Email
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowEmailModal(true)}
+                  className="gap-2"
+                  disabled={!lead.email}
+                  title={!lead.email ? "No email address available" : "Send email to lead"}
+                >
+                  <Send className="h-4 w-4" />
+                  Send Email
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -670,12 +670,15 @@ export const LeadDetailModal = ({
                       <span className="text-xs text-muted-foreground">(0.0%)</span>
                     </div>
                   </div>
-                  {lead.email && (
-                    <Button size="sm" onClick={() => setShowEmailModal(true)}>
-                      <Send className="h-4 w-4 mr-1" />
-                      Send Email
-                    </Button>
-                  )}
+                  <Button 
+                    size="sm" 
+                    onClick={() => setShowEmailModal(true)}
+                    disabled={!lead.email}
+                    title={!lead.email ? "No email address available" : "Send email to lead"}
+                  >
+                    <Send className="h-4 w-4 mr-1" />
+                    Send Email
+                  </Button>
                 </div>
 
                 {/* Email History */}
