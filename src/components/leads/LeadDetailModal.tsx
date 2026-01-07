@@ -49,6 +49,7 @@ import {
   Calendar,
   Briefcase,
   Loader2,
+  MousePointer,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -312,6 +313,17 @@ export const LeadDetailModal = ({
                   >
                     <Pencil className="h-4 w-4" />
                     Edit
+                  </Button>
+                )}
+                {lead.email && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowEmailModal(true)}
+                    className="gap-2"
+                  >
+                    <Send className="h-4 w-4" />
+                    Send Email
                   </Button>
                 )}
                 <Button
@@ -643,12 +655,19 @@ export const LeadDetailModal = ({
 
             <TabsContent value="emails" className="mt-4">
               <div className="space-y-4">
-                {/* Compact Email Stats with Send Button */}
+                {/* Compact Email Engagement Stats with Send Button */}
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-6 text-sm">
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-blue-500" />
-                      <span className="text-muted-foreground">Emails sent</span>
+                      <span className="text-muted-foreground">Opens:</span>
+                      <span className="font-semibold">0</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MousePointer className="h-4 w-4 text-green-500" />
+                      <span className="text-muted-foreground">Clicks:</span>
+                      <span className="font-semibold">0</span>
+                      <span className="text-xs text-muted-foreground">(0.0%)</span>
                     </div>
                   </div>
                   {lead.email && (
