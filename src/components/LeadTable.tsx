@@ -40,24 +40,24 @@ export interface LeadTableRef {
 interface Lead {
   id: string;
   lead_name: string;
-  company_name: string | null;
+  company_name?: string | null;
   account_company_name?: string | null;
   account_id?: string;
-  position: string | null;
-  email: string | null;
-  phone_no: string | null;
+  position?: string | null;
+  email?: string | null;
+  phone_no?: string | null;
   contact_owner?: string;
-  created_time: string | null;
+  created_time?: string | null;
   modified_time?: string;
-  lead_status: string | null;
-  contact_source: string | null;
-  linkedin: string | null;
-  website: string | null;
-  description: string | null;
+  lead_status?: string | null;
+  contact_source?: string | null;
+  linkedin?: string | null;
+  website?: string | null;
+  description?: string | null;
   created_by?: string;
   modified_by?: string;
-  country: string | null;
-  industry: string | null;
+  country?: string | null;
+  industry?: string | null;
 }
 
 const defaultColumns: LeadColumnConfig[] = [{

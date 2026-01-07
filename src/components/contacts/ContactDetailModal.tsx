@@ -53,22 +53,22 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface Contact {
   id: string;
   contact_name: string;
-  company_name: string | null;
+  company_name?: string | null;
   account_id?: string | null;
-  position: string | null;
-  email: string | null;
-  phone_no: string | null;
-  linkedin: string | null;
-  website: string | null;
-  region: string | null;
-  industry: string | null;
-  contact_source: string | null;
-  description: string | null;
-  tags: string[] | null;
-  email_opens: number | null;
-  email_clicks: number | null;
-  engagement_score: number | null;
-  created_time: string | null;
+  position?: string | null;
+  email?: string | null;
+  phone_no?: string | null;
+  linkedin?: string | null;
+  website?: string | null;
+  region?: string | null;
+  industry?: string | null;
+  contact_source?: string | null;
+  description?: string | null;
+  tags?: string[] | null;
+  email_opens?: number | null;
+  email_clicks?: number | null;
+  engagement_score?: number | null;
+  created_time?: string | null;
   modified_time?: string | null;
 }
 
