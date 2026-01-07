@@ -272,6 +272,17 @@ export const ContactDetailModal = ({
                     Update
                   </Button>
                 )}
+                {contact.email && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowEmailModal(true)}
+                    className="gap-2"
+                  >
+                    <Send className="h-4 w-4" />
+                    Send Email
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
@@ -584,7 +595,6 @@ export const ContactDetailModal = ({
                   <ContactEmailTracking
                     emailOpens={contact.email_opens || 0}
                     emailClicks={contact.email_clicks || 0}
-                    engagementScore={contact.engagement_score || 0}
                   />
                   {contact.email && (
                     <Button size="sm" onClick={() => setShowEmailModal(true)}>
