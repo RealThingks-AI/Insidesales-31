@@ -792,14 +792,15 @@ export const ContactTable = forwardRef<ContactTableRef, ContactTableProps>(({
                               icon: <Pencil className="w-4 h-4" />,
                               onClick: () => handleEditContact(contact)
                             },
-                            ...(contact.email ? [{
+                            {
                               label: "Send Email",
                               icon: <Mail className="w-4 h-4" />,
                               onClick: () => {
                                 setEmailContact(contact);
                                 setEmailModalOpen(true);
-                              }
-                            }] : []),
+                              },
+                              disabled: !contact.email
+                            },
                             {
                               label: "Create Meeting",
                               icon: <CalendarPlus className="w-4 h-4" />,
