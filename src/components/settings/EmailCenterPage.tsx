@@ -1,22 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, History, BarChart3 } from 'lucide-react';
-import EmailTemplatesSettings from '@/components/settings/EmailTemplatesSettings';
-import EmailHistorySettings from '@/components/settings/EmailHistorySettings';
-import { EmailAnalyticsDashboard } from '@/components/settings/EmailAnalyticsDashboard';
+import SettingsLoadingSkeleton from './shared/SettingsLoadingSkeleton';
 
-const EmailCenterPage = () => {
-  const [activeTab, setActiveTab] = useState('templates');
+// Lazy load heavy components
+const EmailTemplatesSettings = lazy(() => import('@/components/settings/EmailTemplatesSettings'));
+const EmailHistorySettings = lazy(() => import('@/components/settings/EmailHistorySettings'));
+const EmailAnalyticsDashboard = lazy(() => import('@/components/settings/EmailAnalyticsDashboard').then(m => ({ default: m.EmailAnalyticsDashboard })));
+
+interface EmailCenterPageProps {
+  defaultTab?: string | null;
+}
+
+const validTabs = ['templates', 'history', 'analytics'];
+
+const EmailCenterPage = ({ defaultTab }: EmailCenterPageProps) => {
+  const [activeTab, setActiveTab] = useState(() => {
+    if (defaultTab && validTabs.includes(defaultTab)) {
+      return defaultTab;
+    }
+    return 'templates';
+  });
+
+  useEffect(() => {
+    if (defaultTab && validTabs.includes(defaultTab)) {
+      setActiveTab(defaultTab);
+    }
+  }, [defaultTab]);
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold">Email Center</h2>
-        <p className="text-sm text-muted-foreground">
-          Manage email templates, view sent emails, and analyze engagement
-        </p>
-      </div>
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 max-w-md">
           <TabsTrigger value="templates" className="flex items-center gap-2">
@@ -34,15 +47,21 @@ const EmailCenterPage = () => {
         </TabsList>
 
         <TabsContent value="templates" className="mt-6">
-          <EmailTemplatesSettings />
+          <Suspense fallback={<SettingsLoadingSkeleton />}>
+            <EmailTemplatesSettings />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="history" className="mt-6">
-          <EmailHistorySettings />
+          <Suspense fallback={<SettingsLoadingSkeleton />}>
+            <EmailHistorySettings />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-6">
-          <EmailAnalyticsDashboard />
+          <Suspense fallback={<SettingsLoadingSkeleton rows={3} />}>
+            <EmailAnalyticsDashboard />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </div>

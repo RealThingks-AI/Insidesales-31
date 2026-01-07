@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { User, Shield, Mail } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -34,11 +35,32 @@ const tabs: SettingsTab[] = [
 ];
 
 const Settings = () => {
-  const [activeTab, setActiveTab] = useState("account");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => {
+    return searchParams.get('tab') || 'account';
+  });
   const { userRole } = useUserRole();
   const isAdmin = userRole === "admin";
 
   const visibleTabs = tabs.filter(tab => !tab.adminOnly || isAdmin);
+
+  // Sync tab with URL changes (e.g., browser navigation)
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl && tabFromUrl !== activeTab && visibleTabs.some(t => t.id === tabFromUrl)) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams, visibleTabs]);
+
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+    const section = searchParams.get('section');
+    if (section) {
+      setSearchParams({ tab: tabId, section });
+    } else {
+      setSearchParams({ tab: tabId });
+    }
+  };
 
   // Handle keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent, currentIndex: number) => {
@@ -82,13 +104,14 @@ const Settings = () => {
   }, [isAdmin, activeTab]);
 
   const renderContent = () => {
+    const section = searchParams.get('section');
     switch (activeTab) {
       case "account":
         return <AccountSettingsPage />;
       case "admin":
-        return <AdminSettingsPage />;
+        return <AdminSettingsPage defaultSection={section} />;
       case "email":
-        return <EmailCenterPage />;
+        return <EmailCenterPage defaultTab={section} />;
       default:
         return <AccountSettingsPage />;
     }
@@ -97,8 +120,8 @@ const Settings = () => {
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       {/* Tab Navigation */}
-      <div className="flex-shrink-0 border-b bg-background">
-        <div className="px-6 pt-4">
+      <div className="flex-shrink-0 border-b bg-background h-16 flex items-end">
+        <div className="px-6">
           <nav className="flex gap-1" role="tablist" aria-label="Settings sections">
             {visibleTabs.map((tab, index) => {
               const Icon = tab.icon;
@@ -112,7 +135,7 @@ const Settings = () => {
                   aria-selected={isActive}
                   aria-controls={`tabpanel-${tab.id}`}
                   tabIndex={isActive ? 0 : -1}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => handleTabChange(tab.id)}
                   onKeyDown={(e) => handleKeyDown(e, index)}
                   className={cn(
                     "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-[1px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",

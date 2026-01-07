@@ -28,11 +28,18 @@ const settingsPages = [
   { id: 'profile', title: 'Profile Settings', subtitle: 'Manage your profile', route: '/settings?tab=account' },
   { id: 'notifications', title: 'Notification Settings', subtitle: 'Configure notifications', route: '/settings?tab=account' },
   { id: 'display', title: 'Display Settings', subtitle: 'Theme and appearance', route: '/settings?tab=account' },
-  { id: 'pipeline', title: 'Pipeline Settings', subtitle: 'Manage deal stages', route: '/settings?tab=admin' },
-  { id: 'users', title: 'User Management', subtitle: 'Manage team members', route: '/settings?tab=admin' },
-  { id: 'branding', title: 'Branding Settings', subtitle: 'Customize appearance', route: '/settings?tab=admin' },
-  { id: 'email-templates', title: 'Email Templates', subtitle: 'Manage email templates', route: '/settings?tab=admin' },
-  { id: 'integrations', title: 'Integrations', subtitle: 'Connect external services', route: '/settings?tab=admin' },
+  { id: 'pipeline', title: 'Pipeline Settings', subtitle: 'Manage deal stages', route: '/settings?tab=admin&section=pipeline' },
+  { id: 'users', title: 'User Management', subtitle: 'Manage team members', route: '/settings?tab=admin&section=users' },
+  { id: 'branding', title: 'Branding Settings', subtitle: 'Customize appearance', route: '/settings?tab=admin&section=branding' },
+  { id: 'email-templates', title: 'Email Templates', subtitle: 'Manage email templates', route: '/settings?tab=email&section=templates' },
+  { id: 'integrations', title: 'Integrations', subtitle: 'Connect external services', route: '/settings?tab=admin&section=integrations' },
+  { id: 'page-access', title: 'Page Access Control', subtitle: 'Configure role-based access', route: '/settings?tab=admin&section=page-access' },
+  { id: 'backup', title: 'Data Backup & Restore', subtitle: 'Export data and manage backups', route: '/settings?tab=admin&section=backup' },
+  { id: 'audit-logs', title: 'Audit Logs', subtitle: 'View system activity', route: '/settings?tab=admin&section=audit-logs' },
+  { id: 'system-status', title: 'System Status', subtitle: 'Monitor system health', route: '/settings?tab=admin&section=system-status' },
+  { id: 'announcements', title: 'Announcement Management', subtitle: 'Create announcements', route: '/settings?tab=admin&section=announcements' },
+  { id: 'email-history', title: 'Email History', subtitle: 'View sent emails', route: '/settings?tab=email&section=history' },
+  { id: 'email-analytics', title: 'Email Analytics', subtitle: 'Email engagement stats', route: '/settings?tab=email&section=analytics' },
 ];
 
 export function GlobalSearch() {
@@ -303,11 +310,11 @@ export function GlobalSearch() {
                 const config = typeConfig[type as keyof typeof typeConfig];
                 const Icon = config.icon;
                 
-                return (
-                  <div key={type}>
-                    <div className="px-3 py-2 text-xs font-medium text-muted-foreground bg-muted/50 sticky top-0">
-                      {config.label}s
-                    </div>
+                  return (
+                    <div key={type}>
+                      <div className="px-3 py-2 text-xs font-medium text-muted-foreground bg-popover sticky top-0 z-10 border-b border-border/50">
+                        {config.label}s
+                      </div>
                     {items.map((result, idx) => {
                       const globalIndex = results.indexOf(result);
                       return (
