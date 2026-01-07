@@ -55,19 +55,19 @@ import { format } from 'date-fns';
 interface Lead {
   id: string;
   lead_name: string;
-  company_name: string | null;
+  company_name?: string | null;
   account_id?: string | null;
-  position: string | null;
-  email: string | null;
-  phone_no: string | null;
-  linkedin: string | null;
-  website: string | null;
-  country: string | null;
-  industry: string | null;
-  contact_source: string | null;
-  description: string | null;
-  lead_status: string | null;
-  created_time: string | null;
+  position?: string | null;
+  email?: string | null;
+  phone_no?: string | null;
+  linkedin?: string | null;
+  website?: string | null;
+  country?: string | null;
+  industry?: string | null;
+  contact_source?: string | null;
+  description?: string | null;
+  lead_status?: string | null;
+  created_time?: string | null;
   modified_time?: string | null;
 }
 
