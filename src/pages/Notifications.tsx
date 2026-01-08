@@ -70,21 +70,13 @@ const Notifications = () => {
     if (taskNotificationTypes.includes(notification.notification_type)) {
       navigate('/tasks');
     } else if (notification.lead_id) {
-      navigate(`/leads?highlight=${notification.lead_id}`);
+      navigate(`/leads?viewId=${notification.lead_id}`);
     } else if (dealMatch) {
       const dealId = dealMatch[1];
-      navigate(`/deals?highlight=${dealId}`);
+      navigate(`/deals?viewId=${dealId}`);
     } else if (leadMatch) {
       const leadId = leadMatch[1];
-      navigate(`/leads?highlight=${leadId}`);
-    } else if (notification.notification_type === 'action_item') {
-      if (message.includes('deal')) {
-        navigate('/deals');
-      } else if (message.includes('lead') || message.includes('contact')) {
-        navigate('/leads');
-      } else {
-        navigate('/deals');
-      }
+      navigate(`/leads?viewId=${leadId}`);
     } else if (notification.notification_type === 'deal_update') {
       navigate('/deals');
     } else if (notification.notification_type === 'lead_update') {
@@ -104,8 +96,6 @@ const Notifications = () => {
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'action_item':
-        return '📋';
       case 'lead_update':
         return '👤';
       case 'deal_update':
@@ -172,10 +162,10 @@ const Notifications = () => {
           </div>
         ) : notifications.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <div className="text-center text-muted-foreground">
+          <div className="text-center text-muted-foreground">
               <Bell className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
               <h3 className="text-lg font-semibold mb-2">No notifications yet</h3>
-              <p className="text-sm">You'll see updates about action items and leads here</p>
+              <p className="text-sm">You'll see updates about tasks and records here</p>
             </div>
           </div>
         ) : (

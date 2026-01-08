@@ -203,12 +203,11 @@ export const useNotifications = () => {
           // Show toast notification for relevant notification types
           const newNotification = payload.new as Notification;
           const toastableTypes = [
-            'action_item', 'task_assigned', 'task_completed', 'task_updated', 'task_deleted'
+            'task_assigned', 'task_completed', 'task_updated', 'task_deleted'
           ];
           
           if (toastableTypes.includes(newNotification.notification_type)) {
             const titles: Record<string, string> = {
-              'action_item': 'New Action Item',
               'task_assigned': 'Task Assigned',
               'task_completed': 'Task Completed',
               'task_updated': 'Task Updated',
