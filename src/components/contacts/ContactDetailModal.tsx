@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,32 +19,10 @@ import { MeetingModal } from '@/components/MeetingModal';
 import { MeetingDetailModal } from '@/components/meetings/MeetingDetailModal';
 import { Task } from '@/types/task';
 import { toast } from '@/hooks/use-toast';
-import {
-  User,
-  Building2,
-  Mail,
-  Phone,
-  Globe,
-  Linkedin,
-  MapPin,
-  Plus,
-  Clock,
-  Tag,
-  Activity,
-  Send,
-  History,
-  Pencil,
-  Link2,
-  CalendarPlus,
-  ListTodo,
-  Calendar,
-  ExternalLink,
-  Loader2,
-} from 'lucide-react';
+import { User, Building2, Mail, Phone, Globe, Linkedin, MapPin, Plus, Clock, Tag, Activity, Send, History, Pencil, Link2, CalendarPlus, ListTodo, Calendar, ExternalLink, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
 interface Contact {
   id: string;
   contact_name: string;
@@ -71,7 +44,6 @@ interface Contact {
   created_time?: string | null;
   modified_time?: string | null;
 }
-
 interface Meeting {
   id: string;
   subject: string;
@@ -92,7 +64,6 @@ interface Meeting {
   lead_name?: string | null;
   contact_name?: string | null;
 }
-
 interface ContactDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -100,13 +71,12 @@ interface ContactDetailModalProps {
   onUpdate?: () => void;
   onEdit?: (contact: Contact) => void;
 }
-
 export const ContactDetailModal = ({
   open,
   onOpenChange,
   contact,
   onUpdate,
-  onEdit,
+  onEdit
 }: ContactDetailModalProps) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
@@ -117,7 +87,8 @@ export const ContactDetailModal = ({
   const [tags, setTags] = useState<string[]>([]);
   const [accountName, setAccountName] = useState<string | null>(null);
   const [tasksRefreshToken, setTasksRefreshToken] = useState(0);
-  
+  const [activityRefreshToken, setActivityRefreshToken] = useState(0);
+
   // Linked data
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loadingLinked, setLoadingLinked] = useState(false);
@@ -134,24 +105,22 @@ export const ContactDetailModal = ({
       recordName: contact.contact_name,
       return: '/contacts',
       returnViewId: contact.id,
-      returnTab: 'tasks',
+      returnTab: 'tasks'
     });
     onOpenChange(false);
     navigate(`/tasks?${params.toString()}`);
   };
-
   const handleRequestEditTask = (task: Task) => {
     if (!contact) return;
     const params = new URLSearchParams({
       viewId: task.id,
       return: '/contacts',
       returnViewId: contact.id,
-      returnTab: 'tasks',
+      returnTab: 'tasks'
     });
     onOpenChange(false);
     navigate(`/tasks?${params.toString()}`);
   };
-
   useEffect(() => {
     if (contact) {
       setTags(contact.tags || []);
@@ -164,27 +133,22 @@ export const ContactDetailModal = ({
       fetchLinkedData();
     }
   }, [contact]);
-
   const fetchAccountName = async (accountId: string) => {
-    const { data } = await supabase
-      .from('accounts')
-      .select('company_name')
-      .eq('id', accountId)
-      .single();
+    const {
+      data
+    } = await supabase.from('accounts').select('company_name').eq('id', accountId).single();
     setAccountName(data?.company_name || null);
   };
-
   const fetchLinkedData = async () => {
     if (!contact) return;
     setLoadingLinked(true);
     try {
       // Fetch meetings for this contact
-      const { data: meetingData } = await supabase
-        .from('meetings')
-        .select('*')
-        .eq('contact_id', contact.id)
-        .order('start_time', { ascending: false })
-        .limit(5);
+      const {
+        data: meetingData
+      } = await supabase.from('meetings').select('*').eq('contact_id', contact.id).order('start_time', {
+        ascending: false
+      }).limit(5);
       setMeetings(meetingData || []);
     } catch (error) {
       console.error('Error fetching linked data:', error);
@@ -192,22 +156,19 @@ export const ContactDetailModal = ({
       setLoadingLinked(false);
     }
   };
-
   const handleTagsChange = async (newTags: string[]) => {
     if (!contact) return;
-
     try {
-      const { error } = await supabase
-        .from('contacts')
-        .update({ tags: newTags })
-        .eq('id', contact.id);
-
+      const {
+        error
+      } = await supabase.from('contacts').update({
+        tags: newTags
+      }).eq('id', contact.id);
       if (error) throw error;
-
       setTags(newTags);
       toast({
         title: "Tags Updated",
-        description: "Contact tags have been updated",
+        description: "Contact tags have been updated"
       });
       onUpdate?.();
     } catch (error: any) {
@@ -215,28 +176,24 @@ export const ContactDetailModal = ({
       toast({
         title: "Error",
         description: "Failed to update tags",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const handleActivityLogged = () => {
+    setActivityRefreshToken(prev => prev + 1);
     onUpdate?.();
   };
-
   const getMeetingStatusColor = (status: string) => {
     const statusColors: Record<string, string> = {
       'scheduled': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
       'completed': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-      'cancelled': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+      'cancelled': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
     };
     return statusColors[status] || 'bg-gray-100 text-gray-800';
   };
-
   if (!contact) return null;
-
-  return (
-    <>
+  return <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-200">
           <DialogHeader>
@@ -249,67 +206,16 @@ export const ContactDetailModal = ({
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                   {contact.position && <span>{contact.position}</span>}
                   {contact.position && (contact.company_name || accountName) && <span>at</span>}
-                  {(accountName || contact.company_name) && (
-                    <button
-                      onClick={() => contact.account_id && setShowAccountModal(true)}
-                      className={`font-medium ${contact.account_id ? 'text-primary hover:underline cursor-pointer' : ''}`}
-                      disabled={!contact.account_id}
-                    >
+                  {(accountName || contact.company_name) && <button onClick={() => contact.account_id && setShowAccountModal(true)} className={`font-medium ${contact.account_id ? 'text-primary hover:underline cursor-pointer' : ''}`} disabled={!contact.account_id}>
                       {accountName || contact.company_name}
-                    </button>
-                  )}
+                    </button>}
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {onEdit && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onEdit(contact)}
-                    className="gap-2"
-                  >
+                {onEdit && <Button variant="outline" size="sm" onClick={() => onEdit(contact)} className="gap-2">
                     <Pencil className="h-4 w-4" />
                     Update
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowEmailModal(true)}
-                  className="gap-2"
-                  disabled={!contact.email}
-                  title={!contact.email ? "No email address available" : "Send email to contact"}
-                >
-                  <Send className="h-4 w-4" />
-                  Send Email
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowMeetingModal(true)}
-                  className="gap-2"
-                >
-                  <CalendarPlus className="h-4 w-4" />
-                  Schedule Meeting
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRequestCreateTask}
-                  className="gap-2"
-                >
-                  <ListTodo className="h-4 w-4" />
-                  Create Task
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowActivityLogModal(true)}
-                  className="gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Log Activity
-                </Button>
+                  </Button>}
               </div>
             </div>
           </DialogHeader>
@@ -351,126 +257,92 @@ export const ContactDetailModal = ({
                 <div className="space-y-3">
                   <h3 className="font-medium text-sm text-muted-foreground">Contact Information</h3>
                   
-                  {contact.email && (
-                    <div className="flex items-center gap-2">
+                  {contact.email && <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground" />
                       <div className="flex items-center gap-2">
                         <a href={`mailto:${contact.email}`} className="text-sm hover:underline">
                           {contact.email}
                         </a>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2"
-                          onClick={() => setShowEmailModal(true)}
-                        >
+                        <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => setShowEmailModal(true)}>
                           <Send className="h-3 w-3" />
                         </Button>
                       </div>
-                    </div>
-                  )}
+                    </div>}
                   
-                  {contact.phone_no && (
-                    <div className="flex items-center gap-2">
+                  {contact.phone_no && <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4 text-muted-foreground" />
                       <a href={`tel:${contact.phone_no}`} className="text-sm hover:underline">
                         {contact.phone_no}
                       </a>
-                    </div>
-                  )}
+                    </div>}
                   
-                  {contact.linkedin && (
-                    <div className="flex items-center gap-2">
+                  {contact.linkedin && <div className="flex items-center gap-2">
                       <Linkedin className="h-4 w-4 text-muted-foreground" />
                       <a href={contact.linkedin} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline">
                         LinkedIn Profile
                       </a>
-                    </div>
-                  )}
+                    </div>}
                   
-                  {contact.website && (
-                    <div className="flex items-center gap-2">
+                  {contact.website && <div className="flex items-center gap-2">
                       <Globe className="h-4 w-4 text-muted-foreground" />
                       <a href={contact.website} target="_blank" rel="noopener noreferrer" className="text-sm hover:underline">
                         {contact.website}
                       </a>
-                    </div>
-                  )}
+                    </div>}
                 </div>
 
                 <div className="space-y-3">
                   <h3 className="font-medium text-sm text-muted-foreground">Company Details</h3>
                   
-                  {(accountName || contact.company_name) && (
-                    <div className="flex items-center gap-2">
+                  {(accountName || contact.company_name) && <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4 text-muted-foreground" />
-                      {contact.account_id ? (
-                        <button
-                          onClick={() => setShowAccountModal(true)}
-                          className="text-sm text-primary hover:underline"
-                        >
+                      {contact.account_id ? <button onClick={() => setShowAccountModal(true)} className="text-sm text-primary hover:underline">
                           {accountName || contact.company_name}
-                        </button>
-                      ) : (
-                        <span className="text-sm">{contact.company_name}</span>
-                      )}
-                    </div>
-                  )}
+                        </button> : <span className="text-sm">{contact.company_name}</span>}
+                    </div>}
                   
-                  {contact.industry && (
-                    <div className="flex items-center gap-2">
+                  {contact.industry && <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">{contact.industry}</span>
-                    </div>
-                  )}
+                    </div>}
                   
-                  {contact.region && (
-                    <div className="flex items-center gap-2">
+                  {contact.region && <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">{contact.region}</span>
-                    </div>
-                  )}
+                    </div>}
                   
-                  {contact.contact_source && (
-                    <div className="flex items-center gap-2">
+                  {contact.contact_source && <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">Source: {contact.contact_source}</span>
-                    </div>
-                  )}
+                    </div>}
                 </div>
               </div>
 
-              {contact.description && (
-                <>
+              {contact.description && <>
                   <Separator />
                   <div>
                     <h3 className="font-medium text-sm text-muted-foreground mb-2">Description</h3>
                     <p className="text-sm">{contact.description}</p>
                   </div>
-                </>
-              )}
+                </>}
 
               {/* Timestamps */}
               <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2">
-                {contact.created_time && (
-                  <span className="flex items-center gap-1">
+                {contact.created_time && <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     Created: {format(new Date(contact.created_time), 'dd/MM/yyyy')}
-                  </span>
-                )}
-                {contact.modified_time && (
-                  <span className="flex items-center gap-1">
+                  </span>}
+                {contact.modified_time && <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     Updated: {format(new Date(contact.modified_time), 'dd/MM/yyyy')}
-                  </span>
-                )}
+                  </span>}
               </div>
             </TabsContent>
 
             <TabsContent value="linked" className="mt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Linked Account */}
-                <Card>
+                <Card className="h-full">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Building2 className="h-4 w-4" />
@@ -478,11 +350,7 @@ export const ContactDetailModal = ({
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {contact.account_id && accountName ? (
-                      <div
-                        className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
-                        onClick={() => setShowAccountModal(true)}
-                      >
+                    {contact.account_id && accountName ? <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer" onClick={() => setShowAccountModal(true)}>
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                             <Building2 className="h-5 w-5 text-primary" />
@@ -492,61 +360,40 @@ export const ContactDetailModal = ({
                             <p className="text-sm text-muted-foreground">Account</p>
                           </div>
                         </div>
-                        <Button variant="ghost" size="sm" className="gap-2">
-                          <ExternalLink className="h-4 w-4" />
-                          View Details
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="text-center py-6 text-muted-foreground">
+                        
+                      </div> : <div className="text-center py-6 text-muted-foreground">
                         <Building2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
                         <p className="text-sm">No linked account</p>
-                      </div>
-                    )}
+                      </div>}
                   </CardContent>
                 </Card>
 
                 {/* Linked Meetings */}
-                <Card>
+                <Card className="h-full">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-base flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
                         Meetings ({meetings.length})
                       </CardTitle>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowMeetingModal(true)}
-                        className="h-7 gap-1 text-xs"
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => setShowMeetingModal(true)} className="h-7 gap-1 text-xs">
                         <Plus className="h-3 w-3" />
                         Add
                       </Button>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {loadingLinked ? (
-                      <div className="flex items-center justify-center py-6">
+                    {loadingLinked ? <div className="flex items-center justify-center py-6">
                         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                      </div>
-                    ) : meetings.length === 0 ? (
-                      <div className="text-center py-6 text-muted-foreground">
+                      </div> : meetings.length === 0 ? <div className="text-center py-6 text-muted-foreground">
                         <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
                         <p className="text-sm">No meetings yet</p>
-                      </div>
-                    ) : (
-                      <ScrollArea className="h-[180px]">
+                      </div> : <ScrollArea className="h-[180px]">
                         <div className="space-y-2">
-                          {meetings.map((meeting) => (
-                            <div
-                              key={meeting.id}
-                              className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
-                              onClick={() => {
-                                setSelectedMeeting(meeting);
-                                setShowMeetingDetailModal(true);
-                              }}
-                            >
+                          {meetings.map(meeting => <div key={meeting.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer" onClick={() => {
+                        setSelectedMeeting(meeting);
+                        setShowMeetingDetailModal(true);
+                      }}>
                               <div className="min-w-0 flex-1">
                                 <p className="font-medium text-sm truncate">{meeting.subject}</p>
                                 <p className="text-xs text-muted-foreground">
@@ -556,25 +403,16 @@ export const ContactDetailModal = ({
                               <Badge className={`ml-2 ${getMeetingStatusColor(meeting.status)}`}>
                                 {meeting.status}
                               </Badge>
-                            </div>
-                          ))}
+                            </div>)}
                         </div>
-                      </ScrollArea>
-                    )}
+                      </ScrollArea>}
                   </CardContent>
                 </Card>
               </div>
             </TabsContent>
 
             <TabsContent value="tasks" className="mt-4">
-              <RelatedTasksSection
-                moduleType="contacts"
-                recordId={contact.id}
-                recordName={contact.contact_name}
-                refreshToken={tasksRefreshToken}
-                onRequestCreateTask={handleRequestCreateTask}
-                onRequestEditTask={handleRequestEditTask}
-              />
+              <RelatedTasksSection moduleType="contacts" recordId={contact.id} recordName={contact.contact_name} refreshToken={tasksRefreshToken} onRequestCreateTask={handleRequestCreateTask} onRequestEditTask={handleRequestEditTask} />
             </TabsContent>
 
             <TabsContent value="activity" className="mt-4">
@@ -585,23 +423,15 @@ export const ContactDetailModal = ({
                   Log Activity
                 </Button>
               </div>
-              <ContactActivityTimeline contactId={contact.id} />
+              <ContactActivityTimeline contactId={contact.id} key={activityRefreshToken} />
             </TabsContent>
 
             <TabsContent value="emails" className="mt-4">
               <div className="space-y-4">
                 {/* Compact Email Engagement Stats with Send Button */}
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <ContactEmailTracking
-                    emailOpens={contact.email_opens || 0}
-                    emailClicks={contact.email_clicks || 0}
-                  />
-                  <Button 
-                    size="sm" 
-                    onClick={() => setShowEmailModal(true)}
-                    disabled={!contact.email}
-                    title={!contact.email ? "No email address available" : "Send email to contact"}
-                  >
+                  <ContactEmailTracking emailOpens={contact.email_opens || 0} emailClicks={contact.email_clicks || 0} />
+                  <Button size="sm" onClick={() => setShowEmailModal(true)} disabled={!contact.email} title={!contact.email ? "No email address available" : "Send email to contact"}>
                     <Send className="h-4 w-4 mr-1" />
                     Send Email
                   </Button>
@@ -629,52 +459,26 @@ export const ContactDetailModal = ({
         </DialogContent>
       </Dialog>
 
-      <ContactActivityLogModal
-        open={showActivityLogModal}
-        onOpenChange={setShowActivityLogModal}
-        contactId={contact.id}
-        onSuccess={handleActivityLogged}
-      />
+      <ContactActivityLogModal open={showActivityLogModal} onOpenChange={setShowActivityLogModal} contactId={contact.id} onSuccess={handleActivityLogged} />
 
-      <SendEmailModal
-        open={showEmailModal}
-        onOpenChange={setShowEmailModal}
-        recipient={{
-          name: contact.contact_name,
-          email: contact.email || undefined,
-          company_name: contact.company_name || undefined,
-          position: contact.position || undefined,
-        }}
-        contactId={contact.id}
-        onEmailSent={onUpdate}
-      />
+      <SendEmailModal open={showEmailModal} onOpenChange={setShowEmailModal} recipient={{
+      name: contact.contact_name,
+      email: contact.email || undefined,
+      company_name: contact.company_name || undefined,
+      position: contact.position || undefined
+    }} contactId={contact.id} onEmailSent={onUpdate} />
 
-      <AccountDetailModalById
-        open={showAccountModal}
-        onOpenChange={setShowAccountModal}
-        accountId={contact.account_id || null}
-      />
+      <AccountDetailModalById open={showAccountModal} onOpenChange={setShowAccountModal} accountId={contact.account_id || null} />
 
-      <MeetingModal
-        open={showMeetingModal}
-        onOpenChange={setShowMeetingModal}
-        initialContactId={contact.id}
-        onSuccess={() => {
-          setShowMeetingModal(false);
-          fetchLinkedData();
-          onUpdate?.();
-        }}
-      />
+      <MeetingModal open={showMeetingModal} onOpenChange={setShowMeetingModal} initialContactId={contact.id} onSuccess={() => {
+      setShowMeetingModal(false);
+      fetchLinkedData();
+      onUpdate?.();
+    }} />
 
-      <MeetingDetailModal
-        open={showMeetingDetailModal}
-        onOpenChange={setShowMeetingDetailModal}
-        meeting={selectedMeeting}
-        onUpdate={() => {
-          fetchLinkedData();
-          onUpdate?.();
-        }}
-      />
-    </>
-  );
+      <MeetingDetailModal open={showMeetingDetailModal} onOpenChange={setShowMeetingDetailModal} meeting={selectedMeeting} onUpdate={() => {
+      fetchLinkedData();
+      onUpdate?.();
+    }} />
+    </>;
 };
