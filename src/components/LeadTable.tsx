@@ -327,16 +327,8 @@ const LeadTable = forwardRef<LeadTableRef, LeadTableProps>(({
         // Delete notifications by lead_id
         await supabase.from('notifications').delete().eq('lead_id', leadToDelete.id);
 
-        // Get action items and delete notifications for them
-        const { data: actionItems } = await supabase.from('lead_action_items').select('id').eq('lead_id', leadToDelete.id);
-        if (actionItems && actionItems.length > 0) {
-          const actionItemIds = actionItems.map(item => item.id);
-          await supabase.from('notifications').delete().in('action_item_id', actionItemIds);
-        }
-
-        // Delete lead action items
-        const { error: actionItemsError } = await supabase.from('lead_action_items').delete().eq('lead_id', leadToDelete.id);
-        if (actionItemsError) throw actionItemsError;
+        // Unlink tasks from this lead (tasks can exist independently)
+        await supabase.from('tasks').update({ lead_id: null }).eq('lead_id', leadToDelete.id);
       }
 
       // Delete the lead
@@ -372,15 +364,8 @@ const LeadTable = forwardRef<LeadTableRef, LeadTableProps>(({
         // Delete notifications for all selected leads
         await supabase.from('notifications').delete().in('lead_id', selectedLeads);
         
-        // Get all action items for selected leads
-        const { data: actionItems } = await supabase.from('lead_action_items').select('id').in('lead_id', selectedLeads);
-        if (actionItems && actionItems.length > 0) {
-          const actionItemIds = actionItems.map(item => item.id);
-          await supabase.from('notifications').delete().in('action_item_id', actionItemIds);
-        }
-        
-        // Delete all action items
-        await supabase.from('lead_action_items').delete().in('lead_id', selectedLeads);
+        // Unlink tasks from these leads
+        await supabase.from('tasks').update({ lead_id: null }).in('lead_id', selectedLeads);
       }
       
       const { error } = await supabase.from('leads').delete().in('id', selectedLeads);
