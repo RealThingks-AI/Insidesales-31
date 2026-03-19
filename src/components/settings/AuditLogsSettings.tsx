@@ -214,12 +214,12 @@ const AuditLogsSettings = () => {
     return name.charAt(0).toUpperCase();
   };
 
-  const canRevert = (log: AuditLog) =>
+   const canRevert = (log: AuditLog) =>
     ['CREATE', 'UPDATE', 'DELETE'].includes(log.action) &&
-    ['contacts', 'deals', 'leads', 'action_items'].includes(log.resource_type) &&
+    ['contacts', 'deals', 'leads', 'tasks'].includes(log.resource_type) &&
     log.resource_id && log.details;
 
-  const isValidTableName = (t: string): t is ValidTableName => ['contacts', 'deals', 'leads', 'action_items'].includes(t);
+  const isValidTableName = (t: string): t is ValidTableName => ['contacts', 'deals', 'leads', 'tasks'].includes(t);
 
   const handleRevertClick = (log: AuditLog) => { setSelectedLog(log); setRevertDialogOpen(true); };
 
