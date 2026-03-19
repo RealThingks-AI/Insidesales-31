@@ -1,59 +1,33 @@
 
 
-## Fix: Duplicate "Action Items" Filter in Audit Logs
+## Merge Date Filter Presets into AuditLogStats Bar
 
-### Root Cause
+### What changes
 
-The `security_audit_log` table contains three different `resource_type` values for the same module:
-- `"Action items"` (43 records)
-- `"Action Items"` (4 records)  
-- `"action_items"` (possible additional records)
-
-The `getModuleName()` utility and `getStatsFromLogs()` treat these as separate modules because they do case-sensitive grouping, resulting in duplicate badge filters.
-
-Additionally, since the app migrated from "Action Items" to "Tasks", these should all display as "Tasks".
-
----
+The date preset buttons ("Today", "Last 7 days", "Last 30 days", "This month") currently live in `AuditLogFilters`. They will be moved into the `AuditLogStats` bar so all quick-filter badges and date presets are in one row. The "Today" and "This Week" badges already exist in Stats — the presets will be added after the module badges, replacing the duplicated functionality.
 
 ### Changes
 
-#### 1. Database migration — Normalize resource_type values
-Create a SQL migration to update all legacy action items entries:
-```sql
-UPDATE security_audit_log 
-SET resource_type = 'tasks' 
-WHERE resource_type IN ('Action items', 'Action Items', 'action_items');
+#### 1. `AuditLogStats.tsx` — Add date preset buttons
+- Add new props: `onDatePreset: (from: Date, to: Date) => void` and `activeDatePreset?: string`
+- Import `getDatePresets` from `auditLogUtils`
+- After the module badges, render "Last 7 days", "Last 30 days", "This month" as additional clickable badges (Today/This Week already exist as stat badges)
+- Highlight the active preset with the ring style
 
-UPDATE security_audit_log
-SET details = jsonb_set(details, '{module}', '"Tasks"')
-WHERE resource_type = 'tasks' AND details->>'module' IS NOT NULL;
-```
+#### 2. `AuditLogFilters.tsx` — Remove date preset buttons
+- Remove the preset buttons section (lines 110-121: the separator and preset map)
+- Keep the calendar date pickers and clear button (custom date range selection)
 
-#### 2. Update `auditLogUtils.ts` — Normalize module names
-- In `getModuleName()`: Add a normalization step that maps all variants of "action items" (case-insensitive) to "Tasks"
-- In `getReadableResourceType()`: Add mapping entries for `action_items` → `Tasks` and normalize casing
-
-#### 3. Update `AuditLogsSettings.tsx` — Update filter mappings
-- Line 22: Change `ValidTableName` to include `'tasks'` instead of `'action_items'`
-- Line 162: Change `'Action Items': 'action_items'` to `'Tasks': 'tasks'`  
-- Line 219: Update revert check to use `'tasks'` instead of `'action_items'`
-- Line 222: Update `isValidTableName` to use `'tasks'`
-
-#### 4. Update `AuditLogFilters.tsx` — Rename filter option
-- Change the "Action Items" dropdown option label to "Tasks" and value to `'tasks'`
-- Update the `ModuleFilter` type to include `'tasks'` instead of `'action_items'`
-
-#### 5. Update `getStatsFromLogs` — Case-insensitive grouping
-- Normalize module keys to prevent future duplicates from casing inconsistencies
-
----
+#### 3. `AuditLogsSettings.tsx` — Wire up new props
+- Pass `onDatePreset` and `activeDatePreset` to `AuditLogStats`
+- Add handler that sets dateFrom/dateTo and clears moduleFilter
+- Extend `activeStatsFilter` logic to detect active date presets
 
 ### Technical Details
 
 | File | Change |
 |------|--------|
-| SQL migration | Normalize `resource_type` from action items variants → `tasks` |
-| `src/components/settings/audit/auditLogUtils.ts` | Normalize module name output, update mappings |
-| `src/components/settings/AuditLogsSettings.tsx` | Update type, filter map, revert logic |
-| `src/components/settings/audit/AuditLogFilters.tsx` | Update ModuleFilter type and dropdown |
+| `AuditLogStats.tsx` | Add date preset badges after module badges, new props for preset callback |
+| `AuditLogFilters.tsx` | Remove lines 110-121 (preset buttons and separator) |
+| `AuditLogsSettings.tsx` | Add `handleDatePreset` callback, pass to Stats, update `activeStatsFilter` |
 
