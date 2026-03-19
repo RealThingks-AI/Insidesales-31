@@ -1,59 +1,59 @@
 
 
-## Campaign Audit Remediation: Action Item Logging + Audit Log UX Fixes
+## Fix: Duplicate "Action Items" Filter in Audit Logs
 
-### Problem Analysis
+### Root Cause
 
-**Bug 1 — "Completed action items not in logs"**: Investigation shows logs ARE being created in the database. The real issue is **double-logging** — both `useActionItems.tsx` (hook-level `onSuccess`) and `ActionItems.tsx` (page-level `handleStatusChange`) independently call `logUpdate`, creating duplicate audit entries. Some completions may also appear missing if the user completed items from a Deal or Contact view (where `useCRUDAudit` might not be wired). The double-logging also inflates stats.
+The `security_audit_log` table contains three different `resource_type` values for the same module:
+- `"Action items"` (43 records)
+- `"Action Items"` (4 records)  
+- `"action_items"` (possible additional records)
 
-**Bug 2 — Stats badges not clickable**: `AuditLogStats` renders `Total`, `Today`, `This Week`, and module badges as plain display badges with no `onClick` handlers. They should act as quick filters.
+The `getModuleName()` utility and `getStatsFromLogs()` treat these as separate modules because they do case-sensitive grouping, resulting in duplicate badge filters.
 
-**Bug 3 — Summary text truncation**: The Summary `TableCell` uses the `truncate` CSS class, which clips long text with ellipsis. Text should wrap instead.
+Additionally, since the app migrated from "Action Items" to "Tasks", these should all display as "Tasks".
 
 ---
 
-### Plan
+### Changes
 
-#### 1. Fix double-logging of action item updates
+#### 1. Database migration — Normalize resource_type values
+Create a SQL migration to update all legacy action items entries:
+```sql
+UPDATE security_audit_log 
+SET resource_type = 'tasks' 
+WHERE resource_type IN ('Action items', 'Action Items', 'action_items');
 
-**Files**: `src/pages/ActionItems.tsx`
-
-Remove the redundant `logUpdate`, `logCreate`, `logDelete`, `logBulkUpdate`, `logBulkDelete` calls from the page-level handlers since `useActionItems.tsx` already logs all CRUD operations in its mutation `onSuccess` callbacks. Remove the `useCRUDAudit` import from the page.
-
-Affected handlers: `handleStatusChange`, `handlePriorityChange`, `handleAssignedToChange`, `handleDueDateChange`, `handleBulkComplete`, `handleBulkDelete`, `handleSave`, `handleDelete`.
-
-#### 2. Make stats badges clickable as filters
-
-**Files**: `src/components/settings/audit/AuditLogStats.tsx`, `src/components/settings/AuditLogsSettings.tsx`
-
-- Add callback props to `AuditLogStats`: `onFilterToday`, `onFilterThisWeek`, `onFilterAll`, `onFilterModule(moduleName)`.
-- Wrap each badge in a clickable button/element. When clicked:
-  - "Total" → clear all date/module filters (show all)
-  - "Today" → set date preset to today
-  - "This Week" → set date preset to this week
-  - Module badges (Action Items, Deals, Contacts, etc.) → set module filter to that module
-- Add visual active state to show which filter badge is currently selected.
-- Wire callbacks in `AuditLogsSettings.tsx`.
-
-#### 3. Fix summary text wrapping
-
-**File**: `src/components/settings/AuditLogsSettings.tsx`
-
-Change the Summary `TableCell` (line 323) from `truncate` to `break-words` / `whitespace-normal` so long summaries wrap within the cell instead of being clipped. Also set a `max-w` to keep it readable.
-
+UPDATE security_audit_log
+SET details = jsonb_set(details, '{module}', '"Tasks"')
+WHERE resource_type = 'tasks' AND details->>'module' IS NOT NULL;
 ```
-// Before
-<TableCell className="py-1.5 text-xs truncate">
 
-// After  
-<TableCell className="py-1.5 text-xs whitespace-normal break-words max-w-[500px]">
-```
+#### 2. Update `auditLogUtils.ts` — Normalize module names
+- In `getModuleName()`: Add a normalization step that maps all variants of "action items" (case-insensitive) to "Tasks"
+- In `getReadableResourceType()`: Add mapping entries for `action_items` → `Tasks` and normalize casing
+
+#### 3. Update `AuditLogsSettings.tsx` — Update filter mappings
+- Line 22: Change `ValidTableName` to include `'tasks'` instead of `'action_items'`
+- Line 162: Change `'Action Items': 'action_items'` to `'Tasks': 'tasks'`  
+- Line 219: Update revert check to use `'tasks'` instead of `'action_items'`
+- Line 222: Update `isValidTableName` to use `'tasks'`
+
+#### 4. Update `AuditLogFilters.tsx` — Rename filter option
+- Change the "Action Items" dropdown option label to "Tasks" and value to `'tasks'`
+- Update the `ModuleFilter` type to include `'tasks'` instead of `'action_items'`
+
+#### 5. Update `getStatsFromLogs` — Case-insensitive grouping
+- Normalize module keys to prevent future duplicates from casing inconsistencies
 
 ---
 
 ### Technical Details
 
-- **Double-log root cause**: `useActionItems` hook already calls `logCreate/logUpdate/logDelete/logBulkUpdate/logBulkDelete` in each mutation's `onSuccess`. The page then calls the same audit functions again after `await updateActionItem(...)` returns.
-- **Stats badge wiring**: The parent `AuditLogsSettings` already holds `dateFrom`, `dateTo`, `moduleFilter` state. The callbacks will simply set those values using the existing `getDatePresets()` utility.
-- No schema or migration changes needed.
+| File | Change |
+|------|--------|
+| SQL migration | Normalize `resource_type` from action items variants → `tasks` |
+| `src/components/settings/audit/auditLogUtils.ts` | Normalize module name output, update mappings |
+| `src/components/settings/AuditLogsSettings.tsx` | Update type, filter map, revert logic |
+| `src/components/settings/audit/AuditLogFilters.tsx` | Update ModuleFilter type and dropdown |
 
