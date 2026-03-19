@@ -1,104 +1,59 @@
-# Fix Unresponsive Form Fields in Modal Dialogs
 
-## Problem Analysis
 
-The user reported that when creating a task in the Account section, the form fields (particularly Select dropdowns, Calendar popovers, and other interactive elements) are not responsive/clickable.
+## Campaign Audit Remediation: Action Item Logging + Audit Log UX Fixes
 
-### Root Cause
+### Problem Analysis
 
-The issue is a **z-index stacking context conflict** between the Dialog component and its child components (Select, Popover, Calendar):
+**Bug 1 — "Completed action items not in logs"**: Investigation shows logs ARE being created in the database. The real issue is **double-logging** — both `useActionItems.tsx` (hook-level `onSuccess`) and `ActionItems.tsx` (page-level `handleStatusChange`) independently call `logUpdate`, creating duplicate audit entries. Some completions may also appear missing if the user completed items from a Deal or Contact view (where `useCRUDAudit` might not be wired). The double-logging also inflates stats.
 
-1. **Dialog** uses `z-50` for both the overlay and content
-2. **Select/Popover/Calendar** dropdowns also use `z-50`
-3. When a Select dropdown opens inside a Dialog, it renders in a portal at the same z-level as the Dialog, causing:
-   - Dropdowns appearing behind the dialog overlay
-   - Click events being intercepted by the overlay
-   - Fields appearing unresponsive
+**Bug 2 — Stats badges not clickable**: `AuditLogStats` renders `Total`, `Today`, `This Week`, and module badges as plain display badges with no `onClick` handlers. They should act as quick filters.
 
-### Affected Components
+**Bug 3 — Summary text truncation**: The Summary `TableCell` uses the `truncate` CSS class, which clips long text with ellipsis. Text should wrap instead.
 
-Based on analysis, these modal components use Select/Popover inside Dialogs and may have the same issue:
+---
 
-1. `src/components/tasks/TaskModal.tsx` - Task creation (primary issue reported)
-2. `src/components/AccountModal.tsx` - Account creation/editing
-3. `src/components/ContactModal.tsx` - Contact creation/editing
-4. `src/components/LeadModal.tsx` - Lead creation/editing
-5. `src/components/MeetingModal.tsx` - Meeting creation/editing
-6. `src/components/DealForm.tsx` - Deal form fields
-7. Various detail modals with editable fields
+### Plan
 
-## Solution
+#### 1. Fix double-logging of action item updates
 
-### Approach: Increase z-index for dropdown portals inside dialogs
+**Files**: `src/pages/ActionItems.tsx`
 
-The fix involves updating the UI components to use higher z-index values when rendering inside dialogs. We have two options:
+Remove the redundant `logUpdate`, `logCreate`, `logDelete`, `logBulkUpdate`, `logBulkDelete` calls from the page-level handlers since `useActionItems.tsx` already logs all CRUD operations in its mutation `onSuccess` callbacks. Remove the `useCRUDAudit` import from the page.
 
-**Option A (Recommended): Update base UI components**
-- Update `SelectContent` to use `z-[100]` instead of `z-50`
-- Update `PopoverContent` to use `z-[100]` instead of `z-50`
-- This fixes the issue globally for all modals
+Affected handlers: `handleStatusChange`, `handlePriorityChange`, `handleAssignedToChange`, `handleDueDateChange`, `handleBulkComplete`, `handleBulkDelete`, `handleSave`, `handleDelete`.
 
-**Option B: Add `pointer-events-auto` and higher z-index per usage**
-- Add `className="z-[100] pointer-events-auto"` to each SelectContent/PopoverContent inside dialogs
-- More targeted but requires changes in many files
+#### 2. Make stats badges clickable as filters
 
-## Implementation Steps
+**Files**: `src/components/settings/audit/AuditLogStats.tsx`, `src/components/settings/AuditLogsSettings.tsx`
 
-### Step 1: Update Select Component (src/components/ui/select.tsx)
-- Change `SelectContent` z-index from `z-50` to `z-[100]`
-- Line 76: Update the className from `relative z-50` to `relative z-[100]`
+- Add callback props to `AuditLogStats`: `onFilterToday`, `onFilterThisWeek`, `onFilterAll`, `onFilterModule(moduleName)`.
+- Wrap each badge in a clickable button/element. When clicked:
+  - "Total" → clear all date/module filters (show all)
+  - "Today" → set date preset to today
+  - "This Week" → set date preset to this week
+  - Module badges (Action Items, Deals, Contacts, etc.) → set module filter to that module
+- Add visual active state to show which filter badge is currently selected.
+- Wire callbacks in `AuditLogsSettings.tsx`.
 
-### Step 2: Update Popover Component (src/components/ui/popover.tsx)
-- Change `PopoverContent` z-index from `z-50` to `z-[100]`
-- Line 20: Update the className from `z-50` to `z-[100]`
+#### 3. Fix summary text wrapping
 
-### Step 3: Update Tooltip Component (src/components/ui/tooltip.tsx)
-- Verify and update TooltipContent z-index if needed (should be `z-[100]`)
-- This ensures tooltips also appear above dialogs
+**File**: `src/components/settings/AuditLogsSettings.tsx`
 
-### Step 4: Verify Calendar interactions
-- The Calendar component already has `pointer-events-auto` class in TaskModal.tsx (line 641)
-- Verify this pattern is applied in all modal calendar usages
+Change the Summary `TableCell` (line 323) from `truncate` to `break-words` / `whitespace-normal` so long summaries wrap within the cell instead of being clipped. Also set a `max-w` to keep it readable.
 
-## Testing Checklist
+```
+// Before
+<TableCell className="py-1.5 text-xs truncate">
 
-After implementation, test these scenarios across ALL modules:
+// After  
+<TableCell className="py-1.5 text-xs whitespace-normal break-words max-w-[500px]">
+```
 
-- [ ] Task Modal (Accounts section):
-  - [ ] Module selector dropdown works
-  - [ ] Account selector dropdown works
-  - [ ] Assigned To dropdown works
-  - [ ] Due Date calendar picker works
-  - [ ] Time selector works
-  - [ ] Priority dropdown works
-  - [ ] Status dropdown works
+---
 
-- [ ] Account Modal:
-  - [ ] Region/Country dropdowns work
-  - [ ] Status dropdown works
-  - [ ] Industry dropdown works
+### Technical Details
 
-- [ ] Contact Modal:
-  - [ ] Account selector dropdown works
-  - [ ] Contact Source dropdown works
+- **Double-log root cause**: `useActionItems` hook already calls `logCreate/logUpdate/logDelete/logBulkUpdate/logBulkDelete` in each mutation's `onSuccess`. The page then calls the same audit functions again after `await updateActionItem(...)` returns.
+- **Stats badge wiring**: The parent `AuditLogsSettings` already holds `dateFrom`, `dateTo`, `moduleFilter` state. The callbacks will simply set those values using the existing `getDatePresets()` utility.
+- No schema or migration changes needed.
 
-- [ ] Lead Modal:
-  - [ ] Account selector dropdown works
-  - [ ] Status/Source dropdowns work
-
-- [ ] Meeting Modal:
-  - [ ] Date/Time pickers work
-  - [ ] Timezone selector works
-  - [ ] Contact/Lead selectors work
-
-- [ ] Deal Form:
-  - [ ] All stage-related dropdowns work
-  - [ ] Date pickers work
-
-## Critical Files for Implementation
-
-- `src/components/ui/select.tsx` - Core Select component z-index fix
-- `src/components/ui/popover.tsx` - Core Popover component z-index fix  
-- `src/components/ui/tooltip.tsx` - Tooltip z-index verification
-- `src/components/tasks/TaskModal.tsx` - Primary affected component to test
-- `src/components/ui/dialog.tsx` - Reference for understanding the z-index structure

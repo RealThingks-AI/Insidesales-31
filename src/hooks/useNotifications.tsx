@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Notification {
   id: string;
@@ -12,24 +12,30 @@ interface Notification {
   status: 'read' | 'unread';
   notification_type: string;
   action_item_id: string | null;
+  module_type: string | null;
+  module_id: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export const useNotifications = () => {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalNotifications, setTotalNotifications] = useState(0);
   const { toast } = useToast();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
 
   const itemsPerPage = 50;
 
-  // Fetch notifications with React Query
-  const { data: notificationsData, isLoading: loading } = useQuery({
-    queryKey: ['notifications', user?.id, currentPage],
-    queryFn: async () => {
-      if (!user) return { notifications: [], total: 0, unreadCount: 0 };
+  // Fetch notifications with pagination
+  const fetchNotifications = async (page: number = 1) => {
+    if (!user) return;
 
+    try {
+      setLoading(true);
+      
       // Get total count for pagination
       const { count, error: countError } = await supabase
         .from('notifications')
@@ -37,9 +43,10 @@ export const useNotifications = () => {
         .eq('user_id', user.id);
 
       if (countError) throw countError;
+      setTotalNotifications(count || 0);
 
       // Get paginated notifications
-      const startIndex = (currentPage - 1) * itemsPerPage;
+      const startIndex = (page - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage - 1;
       
       const { data, error } = await supabase
@@ -51,40 +58,41 @@ export const useNotifications = () => {
 
       if (error) throw error;
 
-      // Get total unread count separately
-      const { data: unreadData, error: unreadError } = await supabase
-        .from('notifications')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('status', 'unread');
-      
-      if (unreadError) throw unreadError;
-
       const typedNotifications: Notification[] = (data || []).map(item => ({
         ...item,
         status: item.status as 'read' | 'unread'
       }));
 
-      return {
-        notifications: typedNotifications,
-        total: count || 0,
-        unreadCount: unreadData?.length || 0
-      };
-    },
-    enabled: !!user,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-  });
+      setNotifications(typedNotifications);
+      setCurrentPage(page);
+      
+      // Get total unread count separately (head:true = no rows transferred)
+      const { count: unreadTotal, error: unreadError } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('status', 'unread');
+      
+      if (!unreadError) {
+        setUnreadCount(unreadTotal || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch notifications",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const notifications = notificationsData?.notifications || [];
-  const totalNotifications = notificationsData?.total || 0;
-  const unreadCount = notificationsData?.unreadCount || 0;
+  // Mark notification as read
+  const markAsRead = async (notificationId: string) => {
+    if (!user) return;
 
-  // Mark as read mutation
-  const markAsReadMutation = useMutation({
-    mutationFn: async (notificationId: string) => {
-      if (!user) throw new Error('User not authenticated');
-
+    try {
       const { error } = await supabase
         .from('notifications')
         .update({ status: 'read' })
@@ -92,21 +100,23 @@ export const useNotifications = () => {
         .eq('user_id', user.id);
 
       if (error) throw error;
-      return notificationId;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
-    },
-    onError: (error) => {
+
+      setNotifications(prev => 
+        prev.map(n => 
+          n.id === notificationId ? { ...n, status: 'read' as const } : n
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
       console.error('Error marking notification as read:', error);
-    },
-  });
+    }
+  };
 
-  // Mark all as read mutation
-  const markAllAsReadMutation = useMutation({
-    mutationFn: async () => {
-      if (!user) throw new Error('User not authenticated');
+  // Mark all notifications as read
+  const markAllAsRead = async () => {
+    if (!user) return;
 
+    try {
       const { error } = await supabase
         .from('notifications')
         .update({ status: 'read' })
@@ -114,29 +124,31 @@ export const useNotifications = () => {
         .eq('status', 'unread');
 
       if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
+
+      setNotifications(prev => 
+        prev.map(n => ({ ...n, status: 'read' as const }))
+      );
+      setUnreadCount(0);
+
       toast({
         title: "Success",
         description: "All notifications marked as read"
       });
-    },
-    onError: (error) => {
+    } catch (error) {
       console.error('Error marking all notifications as read:', error);
       toast({
         title: "Error",
         description: "Failed to mark notifications as read",
         variant: "destructive"
       });
-    },
-  });
+    }
+  };
 
-  // Delete notification mutation
-  const deleteNotificationMutation = useMutation({
-    mutationFn: async (notificationId: string) => {
-      if (!user) throw new Error('User not authenticated');
+  // Delete notification
+  const deleteNotification = async (notificationId: string) => {
+    if (!user) return;
 
+    try {
       const { error } = await supabase
         .from('notifications')
         .delete()
@@ -144,45 +156,33 @@ export const useNotifications = () => {
         .eq('user_id', user.id);
 
       if (error) throw error;
-      return notificationId;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
+
+      const deletedNotification = notifications.find(n => n.id === notificationId);
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      
+      if (deletedNotification?.status === 'unread') {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+
       toast({
         title: "Success",
         description: "Notification deleted"
       });
-    },
-    onError: (error) => {
+    } catch (error) {
       console.error('Error deleting notification:', error);
       toast({
         title: "Error",
         description: "Failed to delete notification",
         variant: "destructive"
       });
-    },
-  });
-
-  // Wrapper functions to maintain API compatibility
-  const markAsRead = useCallback(async (notificationId: string) => {
-    await markAsReadMutation.mutateAsync(notificationId);
-  }, [markAsReadMutation]);
-
-  const markAllAsRead = useCallback(async () => {
-    await markAllAsReadMutation.mutateAsync();
-  }, [markAllAsReadMutation]);
-
-  const deleteNotification = useCallback(async (notificationId: string) => {
-    await deleteNotificationMutation.mutateAsync(notificationId);
-  }, [deleteNotificationMutation]);
-
-  const fetchNotifications = useCallback(async (page: number = 1) => {
-    setCurrentPage(page);
-  }, []);
+    }
+  };
 
   // Set up real-time subscription for notifications
   useEffect(() => {
     if (!user) return;
+
+    fetchNotifications();
 
     // Subscribe to real-time changes
     const channel = supabase
@@ -197,25 +197,18 @@ export const useNotifications = () => {
         },
         (payload) => {
           console.log('New notification received:', payload);
-          // Invalidate query to refetch
-          queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
-
-          // Show toast notification for relevant notification types
-          const newNotification = payload.new as Notification;
-          const toastableTypes = [
-            'task_assigned', 'task_completed', 'task_updated', 'task_deleted'
-          ];
+          const newNotification = { 
+            ...payload.new, 
+            status: payload.new.status as 'read' | 'unread' 
+          } as Notification;
           
-          if (toastableTypes.includes(newNotification.notification_type)) {
-            const titles: Record<string, string> = {
-              'task_assigned': 'Task Assigned',
-              'task_completed': 'Task Completed',
-              'task_updated': 'Task Updated',
-              'task_deleted': 'Task Deleted',
-            };
-            
+          setNotifications(prev => [newNotification, ...prev]);
+          setUnreadCount(prev => prev + 1);
+
+          // Show toast notification for new action item notifications
+          if (newNotification.notification_type === 'action_item') {
             toast({
-              title: titles[newNotification.notification_type] || 'New Notification',
+              title: "New Action Item Notification",
               description: newNotification.message,
               duration: 5000,
             });
@@ -230,8 +223,26 @@ export const useNotifications = () => {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`
         },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
+        (payload) => {
+          console.log('Notification updated:', payload);
+          const updatedNotification = { 
+            ...payload.new, 
+            status: payload.new.status as 'read' | 'unread' 
+          } as Notification;
+          
+          setNotifications(prev => 
+            prev.map(n => 
+              n.id === updatedNotification.id ? updatedNotification : n
+            )
+          );
+          
+          // Recalculate unread count
+          const newUnreadCount = notifications.filter(n => 
+            n.id === updatedNotification.id 
+              ? updatedNotification.status === 'unread'
+              : n.status === 'unread'
+          ).length;
+          setUnreadCount(newUnreadCount);
         }
       )
       .on(
@@ -242,8 +253,18 @@ export const useNotifications = () => {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`
         },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
+        (payload) => {
+          console.log('Notification deleted:', payload);
+          const deletedNotification = { 
+            ...payload.old, 
+            status: payload.old.status as 'read' | 'unread' 
+          } as Notification;
+          
+          setNotifications(prev => prev.filter(n => n.id !== deletedNotification.id));
+          
+          if (deletedNotification.status === 'unread') {
+            setUnreadCount(prev => Math.max(0, prev - 1));
+          }
         }
       )
       .subscribe();
@@ -251,7 +272,7 @@ export const useNotifications = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, queryClient, toast]);
+  }, [user, toast]);
 
   return {
     notifications,
