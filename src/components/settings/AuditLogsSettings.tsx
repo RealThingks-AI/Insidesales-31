@@ -50,6 +50,7 @@ const AuditLogsSettings = () => {
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [moduleFilter, setModuleFilter] = useState<ModuleFilter>('all');
+  const [activeDatePreset, setActiveDatePreset] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [revertDialogOpen, setRevertDialogOpen] = useState(false);
@@ -172,6 +173,7 @@ const AuditLogsSettings = () => {
       const entry = Object.entries(moduleDisplayToFilter).find(([, v]) => v === moduleFilter);
       return entry ? entry[0].toLowerCase() : moduleFilter;
     }
+    if (activeDatePreset) return '';
     if (dateFrom && dateTo) {
       const today = startOfDay(new Date());
       const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -180,24 +182,34 @@ const AuditLogsSettings = () => {
     }
     if (!dateFrom && !dateTo && moduleFilter === 'all') return 'all';
     return '';
-  }, [dateFrom, dateTo, moduleFilter]);
+  }, [dateFrom, dateTo, moduleFilter, activeDatePreset]);
 
   const handleFilterAll = useCallback(() => {
     setDateFrom(undefined);
     setDateTo(undefined);
     setModuleFilter('all');
+    setActiveDatePreset('');
   }, []);
 
   const handleFilterToday = useCallback(() => {
     setDateFrom(startOfDay(new Date()));
     setDateTo(new Date());
     setModuleFilter('all');
+    setActiveDatePreset('');
   }, []);
 
   const handleFilterThisWeek = useCallback(() => {
     setDateFrom(startOfWeek(new Date(), { weekStartsOn: 1 }));
     setDateTo(new Date());
     setModuleFilter('all');
+    setActiveDatePreset('');
+  }, []);
+
+  const handleDatePreset = useCallback((from: Date, to: Date, label: string) => {
+    setDateFrom(from);
+    setDateTo(to);
+    setModuleFilter('all');
+    setActiveDatePreset(label);
   }, []);
 
   const handleFilterModule = useCallback((displayName: string) => {
@@ -209,6 +221,7 @@ const AuditLogsSettings = () => {
       setModuleFilter(mapped[1]);
       setDateFrom(undefined);
       setDateTo(undefined);
+      setActiveDatePreset('');
     }
   }, []);
   const getUserInitial = (userId: string) => {
@@ -315,6 +328,8 @@ const AuditLogsSettings = () => {
         onFilterToday={handleFilterToday}
         onFilterThisWeek={handleFilterThisWeek}
         onFilterModule={handleFilterModule}
+        onDatePreset={handleDatePreset}
+        activeDatePreset={activeDatePreset}
       />
 
       {/* Main Log Table */}
@@ -347,8 +362,8 @@ const AuditLogsSettings = () => {
             onModuleFilterChange={setModuleFilter}
             dateFrom={dateFrom}
             dateTo={dateTo}
-            onDateFromChange={setDateFrom}
-            onDateToChange={setDateTo}
+            onDateFromChange={(d) => { setDateFrom(d); setActiveDatePreset(''); }}
+            onDateToChange={(d) => { setDateTo(d); setActiveDatePreset(''); }}
           />
 
           {loading ? (
