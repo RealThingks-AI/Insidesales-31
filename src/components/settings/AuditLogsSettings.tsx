@@ -235,29 +235,29 @@ const AuditLogsSettings = () => {
       if (!resource_id) throw new Error('Resource ID required');
       if (!resource_id) throw new Error('Resource ID required');
 
-      if (action === 'DELETE' && details?.deleted_data) {
+       if (action === 'DELETE' && details?.deleted_data) {
         const record = { ...details.deleted_data };
         if (!record.id) record.id = resource_id;
-        const { error } = await supabase.from(resource_type).insert([record]);
+        const { error } = await supabase.from(revertTable).insert([record]);
         if (error) throw error;
-        toast({ title: "Success", description: `Deleted ${resource_type} record restored` });
+        toast({ title: "Success", description: `Deleted ${revertTable} record restored` });
       } else if (action === 'UPDATE' && details?.old_data) {
-        const { error } = await supabase.from(resource_type).update(details.old_data).eq('id', resource_id);
+        const { error } = await supabase.from(revertTable).update(details.old_data).eq('id', resource_id);
         if (error) throw error;
-        toast({ title: "Success", description: `${resource_type} record reverted` });
+        toast({ title: "Success", description: `${revertTable} record reverted` });
       } else if (action === 'UPDATE' && details?.field_changes) {
         const oldData: Record<string, any> = {};
         Object.entries(details.field_changes).forEach(([field, change]: [string, any]) => {
           if (change && typeof change === 'object' && 'old' in change) oldData[field] = change.old;
         });
         if (Object.keys(oldData).length === 0) throw new Error('No revertible data found');
-        const { error } = await supabase.from(resource_type).update(oldData).eq('id', resource_id);
+        const { error } = await supabase.from(revertTable).update(oldData).eq('id', resource_id);
         if (error) throw error;
-        toast({ title: "Success", description: `${resource_type} record reverted` });
+        toast({ title: "Success", description: `${revertTable} record reverted` });
       } else if (action === 'CREATE') {
-        const { error } = await supabase.from(resource_type).delete().eq('id', resource_id);
+        const { error } = await supabase.from(revertTable).delete().eq('id', resource_id);
         if (error) throw error;
-        toast({ title: "Success", description: `Created ${resource_type} record removed` });
+        toast({ title: "Success", description: `Created ${revertTable} record removed` });
       } else {
         throw new Error(`Cannot revert ${action} - insufficient data`);
       }
