@@ -157,9 +157,9 @@ const AuditLogsSettings = () => {
   const getUserName = (userId: string) => userId ? (userNames[userId] || `User ${userId.substring(0, 8)}`) : 'System';
 
   // Reverse map display module name -> resource_type for filtering
-  const moduleDisplayToFilter: Record<string, ModuleFilter> = {
+   const moduleDisplayToFilter: Record<string, ModuleFilter> = {
     'Contacts': 'contacts', 'Deals': 'deals', 'Leads': 'leads',
-    'Action Items': 'action_items', 'Accounts': 'accounts',
+    'Tasks': 'tasks', 'Accounts': 'accounts',
     'Deal Stakeholders': 'deal_stakeholders', 'Page Access': 'page_permissions',
     'Email Templates': 'email_templates', 'Notifications': 'notification_preferences',
   };
