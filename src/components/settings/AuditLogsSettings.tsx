@@ -188,6 +188,7 @@ const AuditLogsSettings = () => {
     setDateFrom(undefined);
     setDateTo(undefined);
     setModuleFilter('all');
+    setActiveDatePreset('');
   }, []);
 
   const handleFilterToday = useCallback(() => {
