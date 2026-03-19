@@ -327,6 +327,8 @@ const AuditLogsSettings = () => {
         onFilterToday={handleFilterToday}
         onFilterThisWeek={handleFilterThisWeek}
         onFilterModule={handleFilterModule}
+        onDatePreset={handleDatePreset}
+        activeDatePreset={activeDatePreset}
       />
 
       {/* Main Log Table */}
