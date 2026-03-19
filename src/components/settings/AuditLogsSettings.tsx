@@ -115,11 +115,13 @@ const AuditLogsSettings = () => {
     let result = filterByCategory(logs, category);
 
     // Module filter
-    if (moduleFilter !== 'all') {
-      result = result.filter(log =>
-        log.resource_type === moduleFilter ||
-        log.details?.module?.toLowerCase() === moduleFilter
-      );
+     if (moduleFilter !== 'all') {
+      result = result.filter(log => {
+        const rt = log.resource_type === 'tasks' ? 'tasks' : log.resource_type;
+        const dm = log.details?.module?.toLowerCase();
+        return rt === moduleFilter || dm === moduleFilter ||
+          (moduleFilter === 'tasks' && (rt === 'action_items' || dm === 'action items' || dm === 'action_items'));
+      });
     }
 
     if (searchTerm) {
@@ -157,9 +159,9 @@ const AuditLogsSettings = () => {
   const getUserName = (userId: string) => userId ? (userNames[userId] || `User ${userId.substring(0, 8)}`) : 'System';
 
   // Reverse map display module name -> resource_type for filtering
-  const moduleDisplayToFilter: Record<string, ModuleFilter> = {
+   const moduleDisplayToFilter: Record<string, ModuleFilter> = {
     'Contacts': 'contacts', 'Deals': 'deals', 'Leads': 'leads',
-    'Action Items': 'action_items', 'Accounts': 'accounts',
+    'Tasks': 'tasks', 'Accounts': 'accounts',
     'Deal Stakeholders': 'deal_stakeholders', 'Page Access': 'page_permissions',
     'Email Templates': 'email_templates', 'Notifications': 'notification_preferences',
   };
@@ -214,10 +216,12 @@ const AuditLogsSettings = () => {
     return name.charAt(0).toUpperCase();
   };
 
-  const canRevert = (log: AuditLog) =>
-    ['CREATE', 'UPDATE', 'DELETE'].includes(log.action) &&
-    ['contacts', 'deals', 'leads', 'action_items'].includes(log.resource_type) &&
-    log.resource_id && log.details;
+   const canRevert = (log: AuditLog) => {
+    const rt = log.resource_type === 'tasks' ? 'action_items' : log.resource_type;
+    return ['CREATE', 'UPDATE', 'DELETE'].includes(log.action) &&
+      ['contacts', 'deals', 'leads', 'action_items'].includes(rt) &&
+      !!log.resource_id && !!log.details;
+  };
 
   const isValidTableName = (t: string): t is ValidTableName => ['contacts', 'deals', 'leads', 'action_items'].includes(t);
 
@@ -227,33 +231,35 @@ const AuditLogsSettings = () => {
     if (!selectedLog) return;
     setReverting(true);
     try {
-      const { action, resource_type, resource_id, details } = selectedLog;
-      if (!isValidTableName(resource_type)) throw new Error(`Reverting ${resource_type} is not supported`);
+       const { action, resource_id, details } = selectedLog;
+      const revertTable = selectedLog.resource_type === 'tasks' ? 'action_items' : selectedLog.resource_type;
+      if (!isValidTableName(revertTable)) throw new Error(`Reverting ${revertTable} is not supported`);
+      if (!resource_id) throw new Error('Resource ID required');
       if (!resource_id) throw new Error('Resource ID required');
 
-      if (action === 'DELETE' && details?.deleted_data) {
+       if (action === 'DELETE' && details?.deleted_data) {
         const record = { ...details.deleted_data };
         if (!record.id) record.id = resource_id;
-        const { error } = await supabase.from(resource_type).insert([record]);
+        const { error } = await supabase.from(revertTable).insert([record]);
         if (error) throw error;
-        toast({ title: "Success", description: `Deleted ${resource_type} record restored` });
+        toast({ title: "Success", description: `Deleted ${revertTable} record restored` });
       } else if (action === 'UPDATE' && details?.old_data) {
-        const { error } = await supabase.from(resource_type).update(details.old_data).eq('id', resource_id);
+        const { error } = await supabase.from(revertTable).update(details.old_data).eq('id', resource_id);
         if (error) throw error;
-        toast({ title: "Success", description: `${resource_type} record reverted` });
+        toast({ title: "Success", description: `${revertTable} record reverted` });
       } else if (action === 'UPDATE' && details?.field_changes) {
         const oldData: Record<string, any> = {};
         Object.entries(details.field_changes).forEach(([field, change]: [string, any]) => {
           if (change && typeof change === 'object' && 'old' in change) oldData[field] = change.old;
         });
         if (Object.keys(oldData).length === 0) throw new Error('No revertible data found');
-        const { error } = await supabase.from(resource_type).update(oldData).eq('id', resource_id);
+        const { error } = await supabase.from(revertTable).update(oldData).eq('id', resource_id);
         if (error) throw error;
-        toast({ title: "Success", description: `${resource_type} record reverted` });
+        toast({ title: "Success", description: `${revertTable} record reverted` });
       } else if (action === 'CREATE') {
-        const { error } = await supabase.from(resource_type).delete().eq('id', resource_id);
+        const { error } = await supabase.from(revertTable).delete().eq('id', resource_id);
         if (error) throw error;
-        toast({ title: "Success", description: `Created ${resource_type} record removed` });
+        toast({ title: "Success", description: `Created ${revertTable} record removed` });
       } else {
         throw new Error(`Cannot revert ${action} - insufficient data`);
       }
