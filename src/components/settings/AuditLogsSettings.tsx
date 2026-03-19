@@ -229,8 +229,10 @@ const AuditLogsSettings = () => {
     if (!selectedLog) return;
     setReverting(true);
     try {
-      const { action, resource_type, resource_id, details } = selectedLog;
-      if (!isValidTableName(resource_type)) throw new Error(`Reverting ${resource_type} is not supported`);
+       const { action, resource_id, details } = selectedLog;
+      const revertTable = selectedLog.resource_type === 'tasks' ? 'action_items' : selectedLog.resource_type;
+      if (!isValidTableName(revertTable)) throw new Error(`Reverting ${revertTable} is not supported`);
+      if (!resource_id) throw new Error('Resource ID required');
       if (!resource_id) throw new Error('Resource ID required');
 
       if (action === 'DELETE' && details?.deleted_data) {
