@@ -5,7 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Search, CalendarIcon, X } from "lucide-react";
 import { format } from "date-fns";
-import { FilterCategory, getDatePresets } from "./auditLogUtils";
+import { FilterCategory } from "./auditLogUtils";
 
 export type ModuleFilter = 'all' | 'deals' | 'contacts' | 'leads' | 'tasks' | 'accounts' | 'deal_stakeholders' | 'page_permissions' | 'email_templates' | 'notification_preferences';
 
