@@ -173,6 +173,7 @@ const AuditLogsSettings = () => {
       const entry = Object.entries(moduleDisplayToFilter).find(([, v]) => v === moduleFilter);
       return entry ? entry[0].toLowerCase() : moduleFilter;
     }
+    if (activeDatePreset) return '';
     if (dateFrom && dateTo) {
       const today = startOfDay(new Date());
       const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -181,7 +182,7 @@ const AuditLogsSettings = () => {
     }
     if (!dateFrom && !dateTo && moduleFilter === 'all') return 'all';
     return '';
-  }, [dateFrom, dateTo, moduleFilter]);
+  }, [dateFrom, dateTo, moduleFilter, activeDatePreset]);
 
   const handleFilterAll = useCallback(() => {
     setDateFrom(undefined);
