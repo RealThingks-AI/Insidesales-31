@@ -115,11 +115,13 @@ const AuditLogsSettings = () => {
     let result = filterByCategory(logs, category);
 
     // Module filter
-    if (moduleFilter !== 'all') {
-      result = result.filter(log =>
-        log.resource_type === moduleFilter ||
-        log.details?.module?.toLowerCase() === moduleFilter
-      );
+     if (moduleFilter !== 'all') {
+      result = result.filter(log => {
+        const rt = log.resource_type === 'tasks' ? 'tasks' : log.resource_type;
+        const dm = log.details?.module?.toLowerCase();
+        return rt === moduleFilter || dm === moduleFilter ||
+          (moduleFilter === 'tasks' && (rt === 'action_items' || dm === 'action items' || dm === 'action_items'));
+      });
     }
 
     if (searchTerm) {
