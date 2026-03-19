@@ -29,7 +29,6 @@ export const AuditLogFilters = ({
   dateFrom, dateTo,
   onDateFromChange, onDateToChange,
 }: AuditLogFiltersProps) => {
-  const presets = getDatePresets();
   const hasDateFilter = dateFrom || dateTo;
 
   return (
@@ -106,19 +105,6 @@ export const AuditLogFilters = ({
           <X className="h-3.5 w-3.5 mr-1" /> Clear
         </Button>
       )}
-
-      <span className="text-muted-foreground text-xs">|</span>
-      {presets.map(preset => (
-        <Button
-          key={preset.label}
-          variant="ghost"
-          size="sm"
-          className="h-7 text-xs px-2"
-          onClick={() => { onDateFromChange(preset.from); onDateToChange(preset.to); }}
-        >
-          {preset.label}
-        </Button>
-      ))}
     </div>
   );
 };
