@@ -362,8 +362,8 @@ const AuditLogsSettings = () => {
             onModuleFilterChange={setModuleFilter}
             dateFrom={dateFrom}
             dateTo={dateTo}
-            onDateFromChange={setDateFrom}
-            onDateToChange={setDateTo}
+            onDateFromChange={(d) => { setDateFrom(d); setActiveDatePreset(''); }}
+            onDateToChange={(d) => { setDateTo(d); setActiveDatePreset(''); }}
           />
 
           {loading ? (
