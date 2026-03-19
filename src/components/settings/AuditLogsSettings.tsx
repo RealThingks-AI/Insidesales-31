@@ -195,12 +195,21 @@ const AuditLogsSettings = () => {
     setDateFrom(startOfDay(new Date()));
     setDateTo(new Date());
     setModuleFilter('all');
+    setActiveDatePreset('');
   }, []);
 
   const handleFilterThisWeek = useCallback(() => {
     setDateFrom(startOfWeek(new Date(), { weekStartsOn: 1 }));
     setDateTo(new Date());
     setModuleFilter('all');
+    setActiveDatePreset('');
+  }, []);
+
+  const handleDatePreset = useCallback((from: Date, to: Date, label: string) => {
+    setDateFrom(from);
+    setDateTo(to);
+    setModuleFilter('all');
+    setActiveDatePreset(label);
   }, []);
 
   const handleFilterModule = useCallback((displayName: string) => {
