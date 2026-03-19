@@ -221,7 +221,7 @@ const AuditLogsSettings = () => {
       setModuleFilter(mapped[1]);
       setDateFrom(undefined);
       setDateTo(undefined);
-      setActiveDatePreset(''");
+      setActiveDatePreset('');
     }
   }, []);
   const getUserInitial = (userId: string) => {
